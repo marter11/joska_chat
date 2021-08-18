@@ -23,12 +23,12 @@ class ClientObject(object):
         self.peers = peers
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind(('127.0.0.1', LISTEN_PORT)) # 0.0.0.0 means assigned ip address
+sock.bind(('0.0.0.0', LISTEN_PORT)) # 0.0.0.0 means assigned ip address
 
 print("Server started!")
 while 1:
     data, (ip, port) = sock.recvfrom(1024)
-
+    print(ip, port)
     # incoming data should look like this "<action parameter>:<action value>"
     try:
         action, value = data.decode().split(":")

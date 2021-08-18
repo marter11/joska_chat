@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'dart:isolate';
 
 String okxd = "xd";
-String SERVER_ADDRESS = "127.0.0.1";
+String SERVER_ADDRESS = "192.168.0.106";
 int SERVER_PORT = 4567;
 
 String receiveMessage(int count)
@@ -38,7 +38,7 @@ int sendData(String data, dynamic ip_addr, int port)
 void createRoom(String name, String number)
 {
   print('Searching for room named "$name" with number "$number"');
-  sendData(name, SERVER_ADDRESS, SERVER_PORT);
+  sendData("register:" + name, SERVER_ADDRESS, SERVER_PORT);
 }
 
 // Runs on different thread from the rest of the code
