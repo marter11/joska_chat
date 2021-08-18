@@ -14,7 +14,6 @@ class ClientObject(object):
     stored in form (ip, port)
     Client: - Means the current user
     Peers: - only could be none at initial state.
-
     Chat rooms: we store chatroom info at server
         Room Info: - if clinet hosts a chat room (name, owner identified by ip)
     """
@@ -40,7 +39,7 @@ while 1:
             if not CACHE.get(value, None):
                 clientObject = ClientObject( (ip, port) )
                 CACHE[value] = clientObject
-                return_message = "200, Room %s registered." % value
+                return_message = "201, Room %s registered." % value
             else:
                 return_message = "409, Room with name %s already exist." % value
 
@@ -51,10 +50,9 @@ while 1:
                 # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
                 sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
                 room.peers.append((ip,port)) # this uncover the ip addresses of the room's participant no good...
-
-                return_message = "200, %d:%d" % (room[0], room[1])
+                return_message = "302, %d:%d" % (room[0], room[1])
             else:
-                return_message = "404, %s is not available." % value
+                return_message = "404, %s is not found." % value
 
         sock.sendto(return_message.encode(), (ip,port) )
 
