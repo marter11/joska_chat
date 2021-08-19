@@ -24,21 +24,18 @@ int sendData(String data, dynamic ip_addr, int port)
    socket.listen((event) {
      if (event == RawSocketEvent.write) {
        print("debug write");
+       socket.close();
      }
-
-     else if (event == RawSocketEvent.read) {
-       print("debug read");
-     }
-
-     socket.close();
    });
   });
+
+  return 0;
 }
 
 void createRoom(String name, String number)
 {
   print('Searching for room named "$name" with number "$number"');
-  sendData(name, SERVER_ADDRESS, SERVER_PORT);
+  sendData("register:"+name, SERVER_ADDRESS, SERVER_PORT);
 }
 
 // Runs on different thread from the rest of the code
