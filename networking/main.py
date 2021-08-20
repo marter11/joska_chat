@@ -40,7 +40,7 @@ while 1:
     data = data.decode()
     session = 0 # null means invalid session
 
-    print(ip,port)
+    print(data,ip,port)
 
     try:
         data, session = data.split(',')

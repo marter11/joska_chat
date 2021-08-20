@@ -18,18 +18,18 @@ void timeri()
 }
 
 // Runs on different thread from the rest of the code
-void keepConnection(ConnectionHandler Connection)
-{
-  var k = 0;
-  while (k < 2) {
-    var timer = Timer(Duration(seconds: 2), () => {
-      print("Keep connection packet sent"), print(k),
-      Connection.sendData("keep", "0")
-    });
-    k++;
-  }
-
-}
+// void keepConnection(ConnectionHandler Connection)
+// {
+//   var k = 0;
+//   while (k < 2) {
+//     var timer = Timer(Duration(seconds: 2), () => {
+//       print("Keep connection packet sent"), print(k),
+//       Connection.sendData("keep", "0")
+//     });
+//     k++;
+//   }
+//
+// }
 
 
 // EXAMPLE START
@@ -56,13 +56,13 @@ void displayChatRoomUI(ConnectionHandler Connection, String status_code, String 
 
 // EXAMPLE END
 
-// const int SessionTimeout = 10;
+const int SessionTimeout = 10;
 List Connections = [];
 
 void QueueHandler(String session, String status_code, String message, dynamic udp_packet)
 {
-  int queue_counter, session_counter;
-  var Sessions, Connection;
+  int queue_counter;
+  var Connection;
 
   // TODO: if connection with the corresponding ip and port doesn't exist throw error same for session
   for (queue_counter=0; queue_counter<Connections.length; queue_counter++)
@@ -70,20 +70,12 @@ void QueueHandler(String session, String status_code, String message, dynamic ud
     Connection = Connections[queue_counter];
     if (udp_packet.address == InternetAddress(Connection.ip_address) && udp_packet.port == Connection.port)
     {
-      Sessions = Connection.Sessions;
-      for (session_counter=0; session_counter<Sessions.length; session_counter++)
-      {
-        if (session == Sessions[session_counter][0])
-        {
+      // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
+      Connection.last_session = session;
 
-          // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
-          Connection.session_position = session_counter;
+      // This is the callback
+      Connection.Sessions[session][0](Connection, status_code, message);
 
-          // This is the callback
-          Sessions[session_counter][1](Connection, status_code, message);
-
-        }
-      }
     }
   }
 }
@@ -91,13 +83,10 @@ void QueueHandler(String session, String status_code, String message, dynamic ud
 class ConnectionHandler {
   String ip_address;
   int port;
+  String last_session;
 
-  // Used to close sessions based on List index
-  int session_position = -1;
-
-  // structure of <Sessions>: [ String <session identifier>, Function <callback function> ]
-  List<List> Sessions = [];
-  // Map Sessions = {};
+  // structure of <Sessions>: { String <session identifier>: [Function <callback function>, String <retransmission data> }
+  Map Sessions = {};
 
   ConnectionHandler(String ip_address, int port) {
     this.ip_address = ip_address;
@@ -107,7 +96,13 @@ class ConnectionHandler {
 
   int sendData(String data, String session)
   {
-    if (session != "0") data += "," + ( session.toString() );
+    if (session != "0")
+    {
+      data += "," + ( session.toString() );
+
+      // Store this data for retransmission
+      this.Sessions[session].add(data);
+    }
 
     RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
       socket.send(Utf8Codec().encode(data), InternetAddress(this.ip_address), this.port);
@@ -125,8 +120,7 @@ class ConnectionHandler {
   String expectResponse(dynamic callback)
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
-    this.Sessions.add( [session, callback] );
-    // this.Sessions[session] = [callback];
+    this.Sessions[session] = [callback];
     return session;
   }
 
@@ -137,22 +131,44 @@ class ConnectionHandler {
 
   void closeSession()
   {
-    if (this.session_position >= 0 && this.session_position < this.Sessions.length)
-    {
-      this.Sessions.removeAt(this.session_position);
-      this.session_position = -1;
-    }
+    this.Sessions.remove(this.last_session);
   }
 
 }
 
 void EventLoopHandler() async
 {
+  int connection_counter;
+  var Connection;
+
   while (true)
   {
+    print("FROM EVENT LOOP");
+    print(Connections);
+    for (connection_counter=0; connection_counter<Connections.length; connection_counter++)
+    {
 
+      Connection = Connections[connection_counter];
+
+      // Keep alive all connections until ConnectionHandler.closeConnection() is not called upon and object
+      // Send keep alive messages only when other message is not scheduled
+      if (Connection.Sessions.length == 0)
+      {
+        Connection.sendData("keep");
+      }
+
+      Connection.Sessions.values.forEach( (value) => {
+        Connection.sendData(value[1], "0") // send retrasmission_data
+      });
+
+    }
     await sleep(Duration(seconds:3));
   }
+}
+
+void g() async
+{
+
 }
 
 void main()
@@ -162,6 +178,7 @@ void main()
     {
        if (event == RawSocketEvent.read)
        {
+         print("GET");
          Datagram udp_packet = socket.receive();
          if (udp_packet == null) return;
 
@@ -182,12 +199,11 @@ void main()
      });
    });
 
-
-   // EventLoopHandler();
+  EventLoopHandler();
 
   ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
   String s = d.expectResponse(displayChatRoomUI);
-  keepConnection(d);
+  // keepConnection(d);
   for (int i=0;i<3;i++) {
     d.sendData("register:main", s);
   }
