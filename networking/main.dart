@@ -12,26 +12,6 @@ const String SERVER_ADDRESS = "127.0.0.1";
 const int SERVER_PORT = 4567;
 const int OWN_PORT = 4890;
 
-void timeri()
-{
-
-}
-
-// Runs on different thread from the rest of the code
-// void keepConnection(ConnectionHandler Connection)
-// {
-//   var k = 0;
-//   while (k < 2) {
-//     var timer = Timer(Duration(seconds: 2), () => {
-//       print("Keep connection packet sent"), print(k),
-//       Connection.sendData("keep", "0")
-//     });
-//     k++;
-//   }
-//
-// }
-
-
 // EXAMPLE START
 
 // Callback should define a variable for the incoming data and for the session itself...
@@ -70,11 +50,15 @@ void QueueHandler(String session, String status_code, String message, dynamic ud
     Connection = Connections[queue_counter];
     if (udp_packet.address == InternetAddress(Connection.ip_address) && udp_packet.port == Connection.port)
     {
-      // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
-      Connection.last_session = session;
 
-      // This is the callback
-      Connection.Sessions[session][0](Connection, status_code, message);
+      if (Connection.Sessions[session] != null)
+      {
+        // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
+        Connection.last_session = session;
+
+        // This is the callback
+        Connection.Sessions[session][0](Connection, status_code, message);
+      }
 
     }
   }
@@ -143,7 +127,6 @@ void EventLoopHandler() async
 
   while (true)
   {
-    print("FROM EVENT LOOP");
     print(Connections);
     for (connection_counter=0; connection_counter<Connections.length; connection_counter++)
     {
@@ -154,7 +137,7 @@ void EventLoopHandler() async
       // Send keep alive messages only when other message is not scheduled
       if (Connection.Sessions.length == 0)
       {
-        Connection.sendData("keep");
+        Connection.sendData("keep", "0");
       }
 
       Connection.Sessions.values.forEach( (value) => {
@@ -162,23 +145,19 @@ void EventLoopHandler() async
       });
 
     }
-    await sleep(Duration(seconds:3));
+    await Future.delayed(Duration(seconds:2));
   }
-}
-
-void g() async
-{
-
 }
 
 void main()
 {
+
+  // NOTE: if this cause any problem put this into a void function() async and await like form
   RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
     socket.listen((RawSocketEvent event)
     {
        if (event == RawSocketEvent.read)
        {
-         print("GET");
          Datagram udp_packet = socket.receive();
          if (udp_packet == null) return;
 
@@ -203,16 +182,5 @@ void main()
 
   ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
   String s = d.expectResponse(displayChatRoomUI);
-  // keepConnection(d);
-  for (int i=0;i<3;i++) {
-    d.sendData("register:main", s);
-  }
-
-
-  // while (true)
-  // {
-  //   sleep(Duration(seconds:1));
-  // }
-  // sendData("register:alma", SERVER_ADDRESS, SERVER_PORT);
-
+  d.sendData("register:main", s);
 }
