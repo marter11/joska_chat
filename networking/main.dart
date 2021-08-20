@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:isolate';
+import 'dart:async';
 
 // Description of variables and functions
 //
@@ -11,21 +12,54 @@ const String SERVER_ADDRESS = "127.0.0.1";
 const int SERVER_PORT = 4567;
 const int OWN_PORT = 4890;
 
+void timeri()
+{
+
+}
+
 // Runs on different thread from the rest of the code
-void keepConnection()
+void keepConnection(ConnectionHandler Connection)
 {
-   //await Isolate.spawn(echo, None);
+  var k = 0;
+  while (k < 2) {
+    var timer = Timer(Duration(seconds: 2), () => {
+      print("Keep connection packet sent"), print(k),
+      Connection.sendData("keep", "0")
+    });
+    k++;
+  }
+
 }
 
-void ExampleCallback()
+
+// EXAMPLE START
+
+// Callback should define a variable for the incoming data and for the session itself...
+
+// Every callback must define arguments: [ ConnectionHandler <Connection>, String <status_code>, String <message> ]
+void displayChatRoomUI(ConnectionHandler Connection, String status_code, String message)
 {
-  print("CALLBACK IS RUNNING!!!!");
+  if (status_code == "201")
+  {
+    // Show user the chat room UI
+    print("UI displayed");
+  }
+  else
+  {
+    // Show user the error message
+    print("Error displayed");
+  }
+
+  Connection.closeSession();
+
 }
 
-const int SessionTimeout = 10;
+// EXAMPLE END
+
+// const int SessionTimeout = 10;
 List Connections = [];
 
-void QueueHandler(String session, dynamic udp_packet)
+void QueueHandler(String session, String status_code, String message, dynamic udp_packet)
 {
   int queue_counter, session_counter;
   var Sessions, Connection;
@@ -42,8 +76,11 @@ void QueueHandler(String session, dynamic udp_packet)
         if (session == Sessions[session_counter][0])
         {
 
+          // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
+          Connection.session_position = session_counter;
+
           // This is the callback
-          Sessions[session_counter][1]();
+          Sessions[session_counter][1](Connection, status_code, message);
 
         }
       }
@@ -55,8 +92,12 @@ class ConnectionHandler {
   String ip_address;
   int port;
 
-  // structure of <Sessions>: [ String <session identifier>, dynamic <callback function> ]
+  // Used to close sessions based on List index
+  int session_position = -1;
+
+  // structure of <Sessions>: [ String <session identifier>, Function <callback function> ]
   List<List> Sessions = [];
+  // Map Sessions = {};
 
   ConnectionHandler(String ip_address, int port) {
     this.ip_address = ip_address;
@@ -66,7 +107,7 @@ class ConnectionHandler {
 
   int sendData(String data, String session)
   {
-    if (session != 0) data += "," + ( session.toString() );
+    if (session != "0") data += "," + ( session.toString() );
 
     RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
       socket.send(Utf8Codec().encode(data), InternetAddress(this.ip_address), this.port);
@@ -85,6 +126,7 @@ class ConnectionHandler {
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
     this.Sessions.add( [session, callback] );
+    // this.Sessions[session] = [callback];
     return session;
   }
 
@@ -93,13 +135,33 @@ class ConnectionHandler {
     Connections.remove(this);
   }
 
+  void closeSession()
+  {
+    if (this.session_position >= 0 && this.session_position < this.Sessions.length)
+    {
+      this.Sessions.removeAt(this.session_position);
+      this.session_position = -1;
+    }
+  }
+
+}
+
+void EventLoopHandler() async
+{
+  while (true)
+  {
+
+    await sleep(Duration(seconds:3));
+  }
 }
 
 void main()
 {
   RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
-    socket.listen((RawSocketEvent event) {
-       if (event == RawSocketEvent.read) {
+    socket.listen((RawSocketEvent event)
+    {
+       if (event == RawSocketEvent.read)
+       {
          Datagram udp_packet = socket.receive();
          if (udp_packet == null) return;
 
@@ -110,22 +172,26 @@ void main()
          // If this is > 2 then session is sent along with the message
          if (splitted_data.length > 2)
          {
-           print(splitted_data[2]);
-           QueueHandler(splitted_data[2], udp_packet);
+           // splitted_data[2] = session
+           // splitted_data[0] and splitted_data[1] = [String response code, String response message]
+           QueueHandler(splitted_data[2], splitted_data[0], splitted_data[1], udp_packet);
          }
 
-
          // if (recvd_data == "ping") socket.send(Utf8Codec().encode("ping ack"), udp_packet.address, SERVER_PORT);
-         // print("$recvd_data from ${udp_packet.address.address}:${udp_packet.port}");
        }
      });
    });
 
+
+   // EventLoopHandler();
+
   ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
-  String s = d.expectResponse(keepConnection);
+  String s = d.expectResponse(displayChatRoomUI);
+  keepConnection(d);
   for (int i=0;i<3;i++) {
     d.sendData("register:main", s);
   }
+
 
   // while (true)
   // {
