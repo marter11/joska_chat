@@ -3,6 +3,7 @@
 import socket
 import time
 import threading
+import json
 
 CACHE = {}
 
@@ -51,47 +52,54 @@ while 1:
 
     except: pass
 
-    # try:
-    data = data.split(":")
-    action, value = data
-    return_message = ""
+    try:
+        data = data.split(":")
+        action, value = data
+        return_message = ""
 
-    # register new room, <value> is the room's name
-    if action == "register":
+        # register new room, <value> is the room's name
+        if action == "register":
 
-        # This assumes that the CLIENT_QUEUE[session] must exist
-        if len( CLIENT_QUEUE.get(session, []) ) < 3:
-            if not CACHE.get(value, None):
-                clientObject = ClientObject( (ip, port) )
-                CACHE[value] = clientObject
-                return_message = "201,Room %s registered." % value
+            # This assumes that the CLIENT_QUEUE[session] must exist
+            if len( CLIENT_QUEUE.get(session, []) ) < 3:
+                if not CACHE.get(value, None):
+                    clientObject = ClientObject( (ip, port) )
+                    CACHE[value] = clientObject
+                    return_message = {"status_code": "201", "messsage": "Room %s registered." % value}
+                else:
+                    return_message = {"status_code": "409", "message": "Room with name %s already exist." % value}
+
+                return_message["session"] = session
+                CLIENT_QUEUE[session].append(return_message)
+
             else:
-                return_message = "409,Room with name %s already exist." % value
+                return_message = CLIENT_QUEUE[session][2]
 
-            CLIENT_QUEUE[session].append(return_message+','+session)
+        elif action == "join":
+            room = CAHCE.get(value, None)
+            if room:
 
-        else:
-            return_message = CLIENT_QUEUE[session][2]
+                # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
+                sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
+                room.peers.append((ip,port)) # this uncover the ip addresses of the room's participant no good...
+                return_message = "302,%d:%d" % (room[0], room[1])
+            else:
+                return_message = "404,%s is not found." % value
 
-    elif action == "join":
-        room = CAHCE.get(value, None)
-        if room:
+        elif action == "show_rooms":
+            # return_message =
+            pass
 
-            # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
-            sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
-            room.peers.append((ip,port)) # this uncover the ip addresses of the room's participant no good...
-            return_message = "302,%d:%d" % (room[0], room[1])
-        else:
-            return_message = "404,%s is not found." % value
 
-    time.sleep(0.1)
+        print(CLIENT_QUEUE)
+        print("RETURN MESS", return_message)
 
-    print(CLIENT_QUEUE)
-    print("RETURN MESS", return_message)
+        return_message = json.dumps(return_message)
+        time.sleep(0.1)
+        sock.sendto(return_message.encode(), (ip,port) )
 
-    sock.sendto(return_message.encode(), (ip,port) )
+    except: pass
 
-    # except: pass
     # print(data, ip, port)
     # print(CACHE)
 

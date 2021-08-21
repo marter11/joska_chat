@@ -16,10 +16,10 @@ const int OWN_PORT = 4890;
 
 // Callback should define a variable for the incoming data and for the session itself...
 
-// Every callback must define arguments: [ ConnectionHandler <Connection>, String <status_code>, String <message> ]
-void displayChatRoomUI(ConnectionHandler Connection, String status_code, String message)
+// Every callback must define arguments: [ ConnectionHandler <Connection>, var <data_json this is in form of JSON> ]
+void displayChatRoomUI(ConnectionHandler Connection, var data_json)
 {
-  if (status_code == "201")
+  if (data_json["status_code"] == "201")
   {
     // Show user the chat room UI
     print("UI displayed");
@@ -39,10 +39,11 @@ void displayChatRoomUI(ConnectionHandler Connection, String status_code, String 
 const int SessionTimeout = 10;
 List Connections = [];
 
-void QueueHandler(String session, String status_code, String message, dynamic udp_packet)
+void QueueHandler(var data_json, dynamic udp_packet)
 {
   int queue_counter;
   var Connection;
+  String session = data_json["session"];
 
   // TODO: if connection with the corresponding ip and port doesn't exist throw error same for session
   for (queue_counter=0; queue_counter<Connections.length; queue_counter++)
@@ -57,7 +58,7 @@ void QueueHandler(String session, String status_code, String message, dynamic ud
         Connection.last_session = session;
 
         // This is the callback
-        Connection.Sessions[session][0](Connection, status_code, message);
+        Connection.Sessions[session][0](Connection, data_json);
       }
 
     }
@@ -163,14 +164,12 @@ void main()
 
          // structure: [return code, response message, session if any]
          final recvd_data = String.fromCharCodes(udp_packet.data);
-         var splitted_data = recvd_data.split(",");
+         var data_json = jsonDecode(recvd_data);
 
          // If this is > 2 then session is sent along with the message
-         if (splitted_data.length > 2)
+         if (data_json["session"] != null)
          {
-           // splitted_data[2] = session
-           // splitted_data[0] and splitted_data[1] = [String response code, String response message]
-           QueueHandler(splitted_data[2], splitted_data[0], splitted_data[1], udp_packet);
+           QueueHandler(data_json, udp_packet);
          }
 
          // if (recvd_data == "ping") socket.send(Utf8Codec().encode("ping ack"), udp_packet.address, SERVER_PORT);
