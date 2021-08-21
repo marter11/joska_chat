@@ -30,6 +30,10 @@ class ClientObject(object):
         self.client = client
         self.peers = peers
 
+    # Returns [ip, port]
+    def __str__(self):
+        return "[%s, %s]" % (self.client[0], self.client[1])
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT)) # 0.0.0.0 means assigned ip address
 
@@ -41,7 +45,7 @@ while 1:
     data = data.decode()
     session = 0 # null means invalid session
 
-    print(data,ip,port)
+    if data == "keep": continue
 
     try:
         data, session = data.split(',')
@@ -86,16 +90,20 @@ while 1:
             else:
                 return_message = "404,%s is not found." % value
 
-        elif action == "show_rooms":
-            # return_message =
-            pass
+        # TODO: implement return room size if specified because sending all at once is not very productive
+        elif action == "show_rooms" and value == "all":
+            return_message = CACHE.copy()
+            for key, value in return_message.items():
+                return_message[key] = str(value)
 
-
-        print(CLIENT_QUEUE)
-        print("RETURN MESS", return_message)
+        # print(CLIENT_QUEUE)
+        # print("RETURN MESS", return_message)
+        # print(data,ip,port)
 
         return_message = json.dumps(return_message)
         time.sleep(0.1)
+
+        print(return_message)
         sock.sendto(return_message.encode(), (ip,port) )
 
     except: pass

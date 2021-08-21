@@ -140,11 +140,13 @@ void EventLoopHandler() async
       {
         Connection.sendData("keep", "0");
       }
-
-      Connection.Sessions.values.forEach( (value) => {
-        Connection.sendData(value[1], "0") // send retrasmission_data
-      });
-
+      else
+      {
+        // print(Connection.Sessions);
+        Connection.Sessions.values.forEach( (value) => {
+          Connection.sendData(value[1], "0") // send retrasmission_data
+        });
+      }
     }
     await Future.delayed(Duration(seconds:2));
   }
@@ -166,6 +168,8 @@ void main()
          final recvd_data = String.fromCharCodes(udp_packet.data);
          var data_json = jsonDecode(recvd_data);
 
+         print(data_json);
+
          // If this is > 2 then session is sent along with the message
          if (data_json["session"] != null)
          {
@@ -182,4 +186,9 @@ void main()
   ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
   String s = d.expectResponse(displayChatRoomUI);
   d.sendData("register:main", s);
+
+  d.sendData("show_rooms,all", "0");
+  d.sendData("show_rooms:all", "0");
+
+
 }
