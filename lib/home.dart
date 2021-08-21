@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'package:Joska_Chat/newRoom.dart';
+import 'messages.dart';
 // create 'Home' class
 class Home extends StatefulWidget
 {
@@ -8,6 +11,27 @@ class Home extends StatefulWidget
 
 class HomeState extends State<Home>
 {
+  int _currentIndex = 0;
+
+  final List<Widget> _children = 
+  [
+    Messages(),
+    Center
+    (
+      child: Text("Search Chats"),
+    ),
+    NewRoom(),
+    
+  ];
+
+  void changeIndex(int index)
+  {
+    setState(() 
+    {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context)
   {
@@ -22,23 +46,32 @@ class HomeState extends State<Home>
         centerTitle: true,
         backgroundColor: Colors.grey[900],
       ),
-      body: Center
+      body: _children[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar
       (
-        // this is just temporary, so that it doesn't look like total dogshit
-        child: Text("No chats yet"),
-      ),
-      floatingActionButton: FloatingActionButton
-      (
-        // button for creating new room, I don't really think, this will be final
-        onPressed: () 
-        {
-          setState(() 
-          {
-            Navigator.pushNamed(context, '/new_room');
-          });
-        },
-        child: Icon(Icons.add),
-        backgroundColor: Colors.red,
+        unselectedItemColor: Colors.white,
+        currentIndex: _currentIndex,
+        onTap: changeIndex,
+        fixedColor: Colors.white,
+        backgroundColor: Colors.grey[900],
+        items: 
+        [
+          BottomNavigationBarItem
+          (
+            icon: Icon(Icons.home),
+            label: "Home",
+          ),
+          BottomNavigationBarItem
+          (
+            icon: Icon(Icons.search),
+            label: "Search"
+          ),
+          BottomNavigationBarItem
+          (
+            icon: Icon(Icons.add),
+            label: "Add",
+          ),
+        ],
       ),
     );
   }

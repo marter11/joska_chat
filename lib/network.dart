@@ -9,7 +9,7 @@ int SERVER_PORT = 4567;
 
 String receiveMessage(int count)
 {
-  String input = stdin.readLineSync();
+  String? input = stdin.readLineSync();
   if(input != null)
     okxd = input;
   print(okxd);
@@ -33,6 +33,7 @@ int sendData(String data, dynamic ip_addr, int port)
      socket.close();
    });
   });
+  return 0;
 }
 
 void createRoom(String name, String number)

@@ -23,6 +23,7 @@ int sendData(String data, dynamic ip_addr, int port)
      socket.close();
    });
   });
+  return 0;
 }
 
 // Runs on different thread from the rest of the code
@@ -37,7 +38,7 @@ void main()
    RawDatagramSocket.bind(InternetAddress.anyIPv4, 0).then((socket) {
      socket.listen((RawSocketEvent event) {
        if (event == RawSocketEvent.read) {
-         Datagram dg = socket.receive();
+         Datagram? dg = socket.receive();
          if (dg == null) return;
          final recvd = String.fromCharCodes(dg.data);
 

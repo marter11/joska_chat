@@ -24,13 +24,13 @@ class NewRoomState extends State<NewRoom>
     return Scaffold
     (
       backgroundColor: Colors.grey[800],
-      appBar: AppBar
-      (
-        // app bar, so we know where we are (and so it doesn't look like dogshit)
-        title: Text("Create Room"),
-        centerTitle: true,
-        backgroundColor: Colors.grey[900],
-      ),
+      // appBar: AppBar
+      // (
+      //   // app bar, so we know where we are (and so it doesn't look like dogshit)
+      //   title: Text("Create Room"),
+      //   centerTitle: true,
+      //   backgroundColor: Colors.grey[900],
+      // ),
       body: Column
       (
         // necessary, so that we can put widgets under eachother
@@ -38,8 +38,18 @@ class NewRoomState extends State<NewRoom>
         [
           Container
           (
-            // text field for room name with some padding
             padding: EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+            child: Text
+            (
+              "Create Room",
+              textScaleFactor: 1.5,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          Container
+          (
+            // text field for room name with some padding
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 0),
             child: TextField
             (
               textCapitalization: TextCapitalization.words,
@@ -65,7 +75,7 @@ class NewRoomState extends State<NewRoom>
           Container
           (
             // text field for room number, if those will exist
-            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 0),
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 40),
             child: TextField
             (
               keyboardType: TextInputType.number,
@@ -92,7 +102,7 @@ class NewRoomState extends State<NewRoom>
           Container
           (
             // button, for actually creating the room
-            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 0),
             //flutter wants to use the new 'ElevatedButton', but this is much better
             child: RaisedButton
             (
