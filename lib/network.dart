@@ -24,15 +24,11 @@ int sendData(String data, dynamic ip_addr, int port)
    socket.listen((event) {
      if (event == RawSocketEvent.write) {
        print("debug write");
+       socket.close();
      }
-
-     else if (event == RawSocketEvent.read) {
-       print("debug read");
-     }
-
-     socket.close();
    });
   });
+
   return 0;
 }
 
