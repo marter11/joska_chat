@@ -7,6 +7,12 @@ String okxd = "xd";
 String SERVER_ADDRESS = "192.168.0.106";
 int SERVER_PORT = 4567;
 
+//we have to decide and mplement how to know, what IP-s to send to
+void sendMessage(String message)
+{
+  print(message);
+}
+
 String receiveMessage(int count)
 {
   String? input = stdin.readLineSync();

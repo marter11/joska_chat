@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'main.dart';
 import 'package:Joska_Chat/newRoom.dart';
 import 'messages.dart';
 // create 'Home' class
@@ -45,6 +45,11 @@ class HomeState extends State<Home>
         title: Text("Joska Chat"),
         centerTitle: true,
         backgroundColor: Colors.grey[900],
+        leading: Icon(Icons.account_circle_outlined),//for the time being, only a placeholder for a possible profile button later
+        // (
+        //   // onPressed: () {},
+        //   icon: Icon(Icons.account_circle)
+        // ),
       ),
       body: _children[_currentIndex],
       bottomNavigationBar: BottomNavigationBar

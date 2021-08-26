@@ -5,8 +5,12 @@ import 'newRoom.dart';
 import 'network.dart';
 import 'home.dart';
 
+
 String getRoomData(List<String> rooms, int index, bool ip)
 {
+  //returns either the IP or the name(ID) of a room
+  //ip - false ==> ID;;; ip - true ==> IP
+
   if (rooms.length <= index) return ' ';
 
   String temp = rooms[index];
@@ -24,15 +28,25 @@ String getRoomData(List<String> rooms, int index, bool ip)
   }
 }
 
+class RoomData
+{
+  String id;
+  String ip;
+
+  RoomData(this. id, this.ip);
+}
+
 void main() 
 {
   // main function much simpler
   runApp(MaterialApp
   (
+    //disable 'DEBUG' banner for later use
+    // debugShowCheckedModeBanner: false,
     routes: 
     {
       '/': (context) => Home(), // default route
-      '/room': (context) => Room(id: '', ip:''),
+      '/room': (context) => Room(),
     },
   ));
 }
