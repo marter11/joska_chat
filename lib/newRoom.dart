@@ -1,5 +1,6 @@
 import 'package:Joska_Chat/main.dart';
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'networking/main.dart';
 
 
@@ -14,6 +15,10 @@ void createRoom(String name, String number)
 
   // should block this until callback or timeout is called
 }
+=======
+import 'network.dart';
+import 'main.dart';
+>>>>>>> 760e95eaca84142309a47e17a91162c1f88ca592
 
 class NewRoom extends StatefulWidget
 {

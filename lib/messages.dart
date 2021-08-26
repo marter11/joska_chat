@@ -7,8 +7,7 @@ import 'networking/main.dart';
 //Map rooms = {"kecske": ["192", "8080"], "gika": ["sda"]};
 Map rooms = {};
 
-//returns either the IP or the name(ID) of a room
-//ip - false ==> ID;;; ip - true ==> IP
+
 
 class Messages extends StatefulWidget 
 {
@@ -60,11 +59,11 @@ class MessagesState extends State<Messages>
                     print(getRoomData(rooms, index, false));
                     setState(() 
                     {
-                      Navigator.pushNamed(context, '/room', arguments: <String, String>
-                      {
-                        'id': getRoomData(rooms, index, false),
-                        'ip': getRoomData(rooms, index, true)
-                      });
+                      Navigator.pushNamed(context, '/room', arguments: RoomData
+                      (
+                        getRoomData(rooms, index, false),
+                        getRoomData(rooms, index, true)
+                      ));
                     });
                   },
                   isThreeLine: false,

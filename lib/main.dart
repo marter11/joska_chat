@@ -8,7 +8,7 @@ import 'home.dart';
 String getRoomData(Map rooms, int index, bool ip)
 {
   rooms = rooms["message"];
-  if(ip)
+  if (ip)
   {
     return rooms.values.toList()[index][0];
   }
@@ -16,6 +16,14 @@ String getRoomData(Map rooms, int index, bool ip)
   {
     return rooms.keys.toList()[index];
   }
+}
+
+class RoomData
+{
+  String id;
+  String ip;
+
+  RoomData(this. id, this.ip);
 }
 
 void main()
@@ -28,10 +36,12 @@ void main()
   // main function much simpler
   runApp(MaterialApp
   (
+    //disable 'DEBUG' banner for later use
+    // debugShowCheckedModeBanner: false,
     routes:
     {
       '/': (context) => Home(), // default route
-      '/room': (context) => Room(id: '', ip:''),
+      '/room': (context) => Room(),
     },
   ));
 }

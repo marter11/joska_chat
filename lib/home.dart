@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'networking/main.dart';
 import 'package:Joska_Chat/newRoom.dart';
+import 'main.dart';
 import 'messages.dart';
 // create 'Home' class
 class Home extends StatefulWidget
@@ -14,7 +15,7 @@ class HomeState extends State<Home>
 {
   int _currentIndex = 0;
 
-  final List<Widget> _children = 
+  final List<Widget> _children =
   [
     Messages(),
     Center
@@ -22,12 +23,12 @@ class HomeState extends State<Home>
       child: Text("Search Chats"),
     ),
     NewRoom(),
-    
+
   ];
 
   void changeIndex(int index)
   {
-    setState(() 
+    setState(()
     {
       _currentIndex = index;
     });
@@ -46,6 +47,11 @@ class HomeState extends State<Home>
         title: Text("Joska Chat"),
         centerTitle: true,
         backgroundColor: Colors.grey[900],
+        leading: Icon(Icons.account_circle_outlined),//for the time being, only a placeholder for a possible profile button later
+        // (
+        //   // onPressed: () {},
+        //   icon: Icon(Icons.account_circle)
+        // ),
       ),
       body: _children[_currentIndex],
       bottomNavigationBar: BottomNavigationBar
@@ -55,7 +61,7 @@ class HomeState extends State<Home>
         onTap: changeIndex,
         fixedColor: Colors.white,
         backgroundColor: Colors.grey[900],
-        items: 
+        items:
         [
           BottomNavigationBarItem
           (
