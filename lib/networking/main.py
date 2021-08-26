@@ -7,10 +7,16 @@ import json
 
 CACHE = {}
 
-LISTEN_PORT = 4567
-LISTEN_IP = '127.0.0.1'
-
 DEBUG = True
+LISTEN_PORT = 4567
+
+if DEBUG:
+    # add temporary rooms
+    CACHE["test room which you cant connect to"] = ["127.0.0.1", "69420"]
+
+    LISTEN_IP = '127.0.0.1'
+else:
+    LISTEN_IP = '192.168.0.105'
 
 # TODO: what if someone faking or duplicate session is found (keep only the first one since the session could duplicate because it tied to current time)
 # CLIENT_QUEUE only used when we need a response for reliability for example: when creating a room
@@ -32,7 +38,7 @@ class ClientObject(object):
 
     # Returns [ip, port]
     def __str__(self):
-        return "[%s, %s]" % (self.client[0], self.client[1])
+        return "%s:%s" % (self.client[0], self.client[1])
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT)) # 0.0.0.0 means assigned ip address
@@ -94,11 +100,17 @@ while 1:
         elif action == "show_rooms" and value == "all":
             return_message = CACHE.copy()
             for key, value in return_message.items():
-                return_message[key] = str(value)
+                return_message[key] = [value[0], value[1]]
+
+            if CLIENT_QUEUE.get(session, None):
+                return_message = {"session": session, "message": return_message}
+
+            # will throw error
+            return_message = "alma"
 
         # print(CLIENT_QUEUE)
         # print("RETURN MESS", return_message)
-        # print(data,ip,port)
+        print(data,ip,port)
 
         return_message = json.dumps(return_message)
         time.sleep(0.1)

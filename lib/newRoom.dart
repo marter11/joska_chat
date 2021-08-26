@@ -1,5 +1,19 @@
+import 'package:Joska_Chat/main.dart';
 import 'package:flutter/material.dart';
-import 'network.dart';
+import 'networking/main.dart';
+
+
+// NOTE: Might put these kind of functions into a separate file
+void createRoom(String name, String number)
+{
+  ConnectionHandler serverConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
+  String sessionForRoomCreation = serverConnection.expectResponse(displayChatRoomUI);
+
+  String dataToSend = "register:"+name;
+  serverConnection.sendData(dataToSend, sessionForRoomCreation);
+
+  // should block this until callback or timeout is called
+}
 
 class NewRoom extends StatefulWidget
 {

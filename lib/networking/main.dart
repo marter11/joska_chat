@@ -8,7 +8,7 @@ import 'dart:async';
 //
 // queue sessions are based on DateTime.now().millisecondsSinceEpoch which is timestamp in miliseconds
 
-const String SERVER_ADDRESS = "127.0.0.1";
+const String SERVER_ADDRESS = "10.0.2.2";
 const int SERVER_PORT = 4567;
 const int OWN_PORT = 4890;
 
@@ -56,6 +56,7 @@ void QueueHandler(var data_json, dynamic udp_packet)
       {
         // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
         Connection.last_session = session;
+        data_json.remove("session");
 
         // This is the callback
         Connection.Sessions[session][0](Connection, data_json);
@@ -66,9 +67,9 @@ void QueueHandler(var data_json, dynamic udp_packet)
 }
 
 class ConnectionHandler {
-  String ip_address;
-  int port;
-  String last_session;
+  String ip_address = "";
+  int port = 0;
+  String last_session = "";
 
   // structure of <Sessions>: { String <session identifier>: [Function <callback function>, String <retransmission data> }
   Map Sessions = {};
@@ -97,6 +98,8 @@ class ConnectionHandler {
         }
       });
     });
+
+    print(data);
 
     return 0;
   }
@@ -144,7 +147,7 @@ void EventLoopHandler() async
       {
         // print(Connection.Sessions);
         Connection.Sessions.values.forEach( (value) => {
-          Connection.sendData(value[1], "0") // send retrasmission_data
+          Connection.sendData(value[1], "0") // send retrasmission data
         });
       }
     }
@@ -152,16 +155,15 @@ void EventLoopHandler() async
   }
 }
 
-void main()
+void listenDatagram()
 {
-
   // NOTE: if this cause any problem put this into a void function() async and await like form
   RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
     socket.listen((RawSocketEvent event)
     {
        if (event == RawSocketEvent.read)
        {
-         Datagram udp_packet = socket.receive();
+         Datagram? udp_packet = socket.receive();
          if (udp_packet == null) return;
 
          // structure: [return code, response message, session if any]
@@ -180,15 +182,20 @@ void main()
        }
      });
    });
-
-  EventLoopHandler();
-
-  ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
-  String s = d.expectResponse(displayChatRoomUI);
-  d.sendData("register:main", s);
-
-  d.sendData("show_rooms,all", "0");
-  d.sendData("show_rooms:all", "0");
-
-
 }
+
+// void main()
+// {
+//
+//   ListenDatagram();
+//   EventLoopHandler();
+//
+//   ConnectionHandler d = ConnectionHandler('127.0.0.1', 4567);
+//   String s = d.expectResponse(displayChatRoomUI);
+//   d.sendData("register:main", s);
+//
+//   d.sendData("show_rooms,all", "0");
+//   d.sendData("show_rooms:all", "0");
+//
+//
+// }

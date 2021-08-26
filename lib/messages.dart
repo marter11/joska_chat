@@ -1,16 +1,11 @@
+import 'package:Joska_Chat/networking/main.dart';
 import 'package:flutter/material.dart';
 import 'main.dart';
+import 'networking/main.dart';
 
-List<String> rooms = [];
-
-int getRooms()
-{
-  rooms = [];
-  rooms.add("192.168.0.106:TestRoom1");
-  rooms.add("127.0.0.1:TestRoom2");
-  rooms.add("0.0.0.0:TestRoom3");
-  return 0;
-}
+// test data
+//Map rooms = {"kecske": ["192", "8080"], "gika": ["sda"]};
+Map rooms = {};
 
 //returns either the IP or the name(ID) of a room
 //ip - false ==> ID;;; ip - true ==> IP
@@ -23,9 +18,25 @@ class Messages extends StatefulWidget
 
 class MessagesState extends State<Messages> 
 {
-  int xd = getRooms();
+  MessagesState()
+  {
+    // acts like getRooms()
+    ConnectionHandler serverGetRoomConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
+    String roomListSession = serverGetRoomConnection.expectResponse((Connection, json_data) => {
+      rooms = json_data,
+      Connection.closeSession(),
+      Connection.closeConnection(),
+
+      // update content and reload page
+      this.build(context),
+      setState((){})
+    });
+    serverGetRoomConnection.sendData("show_rooms:all", roomListSession);
+  }
+
   @override
   Widget build(BuildContext context) {
+    //print("build");
     return ListView.builder
     (
       itemCount: rooms.length,
