@@ -105,8 +105,9 @@ while 1:
             if CLIENT_QUEUE.get(session, None):
                 return_message = {"session": session, "message": return_message}
 
-            # will throw error
-            return_message = "alma"
+            # will throw error make errror handler at client side
+            # error cause because dart jsonDecode decodes json data even is it isn't
+            # return_message = "alma"
 
         # print(CLIENT_QUEUE)
         # print("RETURN MESS", return_message)

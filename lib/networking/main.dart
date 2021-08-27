@@ -168,14 +168,25 @@ void listenDatagram()
 
          // structure: [return code, response message, session if any]
          final recvd_data = String.fromCharCodes(udp_packet.data);
-         var data_json = jsonDecode(recvd_data);
-
+         var data_json = jsonDecode(recvd_data); // this should be Map like
          print(data_json);
 
-         // If this is > 2 then session is sent along with the message
-         if (data_json["session"] != null)
+         // handle error if invalid data is received like not appropiate type
+         try {
+
+           // If this is > 2 then session is sent along with the message
+           if (data_json["session"] != null)
+           {
+             QueueHandler(data_json, udp_packet);
+           }
+
+         }
+
+         // TODO: maybe display error to user if this happens
+         // you can reproduce this error is you uncomment the return_messsage = "alma" at main.py 
+         catch (error)
          {
-           QueueHandler(data_json, udp_packet);
+           print(error);
          }
 
          // if (recvd_data == "ping") socket.send(Utf8Codec().encode("ping ack"), udp_packet.address, SERVER_PORT);
