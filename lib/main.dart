@@ -5,6 +5,10 @@ import 'newRoom.dart';
 import 'networking/main.dart';
 import 'home.dart';
 
+// NOTE: change this is we could get the current route directly
+// TODO: put refresh button at home is refresh if pressed clear the particular route from the route_map
+Map route_mapper = {}; // map route to functions
+
 String getRoomData(Map rooms, int index, bool ip)
 {
   rooms = rooms["message"];
