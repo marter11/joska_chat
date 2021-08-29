@@ -39,7 +39,7 @@ void displayChatRoomUI(ConnectionHandler Connection, var data_json)
 const int SessionTimeout = 10;
 List Connections = [];
 
-void QueueHandler(var data_json, dynamic udp_packet)
+void RouteIncomingData(var data_json, dynamic udp_packet)
 {
   int queue_counter;
   var Connection;
@@ -60,6 +60,14 @@ void QueueHandler(var data_json, dynamic udp_packet)
 
         // This is the callback
         Connection.Sessions[session][0](Connection, data_json);
+      }
+
+      else {
+        bool connectedToARoom = true; // PRIORITY TODO: change this to anything which could check if user currently connected to any room aka expecting a room message to display it in the chat
+        if (data_json["room_message"] != null && connectedToARoom)
+        {
+          print("Displayed: ${data_json["room_message"]}");
+        }
       }
 
     }
@@ -137,7 +145,7 @@ void EventLoopHandler() async
 
       Connection = Connections[connection_counter];
 
-      // Keep alive all connections until ConnectionHandler.closeConnection() is not called upon and object
+      // Keep alive all connections in the List Connections until ConnectionHandler.closeConnection() is not called upon them
       // Send keep alive messages only when other message is not scheduled
       if (Connection.Sessions.length == 0)
       {
@@ -147,12 +155,55 @@ void EventLoopHandler() async
       {
         // print(Connection.Sessions);
         Connection.Sessions.values.forEach( (value) => {
-          Connection.sendData(value[1], "0") // send retrasmission data
+          Connection.sendData(value[1], "0") // resend data until Connection.closeSession() is not called
         });
       }
     }
     await Future.delayed(Duration(seconds:2));
   }
+}
+
+void InformServerCallback(ConnectionHandler Connection, var json_data)
+{
+
+}
+
+void EstablishedCommunicationWithRoomHostCallback(ConnectionHandler Connection, var json_data)
+{
+  if (json_data["status_code"] == 200)
+  {
+    Connection.closeSession();
+
+  }
+}
+
+// RoomIdentifier currently refers to the room's name
+void InformServerForConnectingToRoom(String RoomIdentifier)
+{
+    ConnectionHandler serverConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
+    String sessionForRoomCreation = serverConnection.expectResponse((Connection, json_data) {
+
+      Connection.closeSession();
+      Connection.closeConnection();
+
+      if (json_data["status_code"] == 404)
+      {
+        // display (room not found)/(invalid room) error message to user
+        return;
+      }
+
+      // NOTE: we could use the the ip and port which are already saved to memory, but instead use the newly received parameters
+      // reason: we will optimize to send as few data as possible when we get the ROOM LIST from server
+      ConnectionHandler roomHostConnection = ConnectionHandler(json_data["ip_address"], json_data["port"]);
+      String roomHostSession = roomHostConnection.expectResponse(EstablishedCommunicationWithRoomHostCallback);
+
+      Map request = {"message": "establish"};
+      roomHostConnection.sendData(jsonEncode(request), roomHostSession);
+
+    });
+
+    String dataToSend = "join:"+RoomIdentifier;
+    serverConnection.sendData(dataToSend, sessionForRoomCreation);
 }
 
 void listenDatagram()
@@ -172,18 +223,10 @@ void listenDatagram()
          print(data_json);
 
          // handle error if invalid data is received like not appropiate type
-         try {
-
-           // If this is > 2 then session is sent along with the message
-           if (data_json["session"] != null)
-           {
-             QueueHandler(data_json, udp_packet);
-           }
-
-         }
+         try {RouteIncomingData(data_json, udp_packet);}
 
          // TODO: maybe display error to user if this happens
-         // you can reproduce this error is you uncomment the return_messsage = "alma" at main.py 
+         // you can reproduce this error is you uncomment the return_messsage = "alma" at main.py
          catch (error)
          {
            print(error);

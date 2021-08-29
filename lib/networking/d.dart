@@ -1,9 +1,13 @@
 import 'dart:io';
+import 'dart:core';
+import 'dart:convert';
+
+const int OWN_PORT = 6969;
 
 void main()
 {
-  var a = "alma";
-  var b = {"alma": 5, "session": "3453dfs"};
-  print(a.runtimeType);
-  print(b.runtimeType == {);
+  var k = {"a": 55};
+  // print(k.jsonEncode());
+
+  print(k["alma"] != null);
 }

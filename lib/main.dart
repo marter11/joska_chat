@@ -11,7 +11,7 @@ Map route_mapper = {}; // map route to functions
 
 String getRoomData(Map rooms, int index, bool ip)
 {
-  rooms = rooms["message"];
+  //rooms = rooms["message"];
   if (ip)
   {
     return rooms.values.toList()[index][0];
@@ -27,7 +27,7 @@ class RoomData
   String id;
   String ip;
 
-  RoomData(this. id, this.ip);
+  RoomData(this.id, this.ip);
 }
 
 void main()

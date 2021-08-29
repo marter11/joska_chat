@@ -27,14 +27,13 @@ class ClientObject(object):
     """
     stored in form (ip, port)
     Client: - Means the current user
-    Peers: - only could be none at initial state.
+    Peers: - only could be none at initial state. // currently disabled
     Chat rooms: we store chatroom info at server
         Room Info: - if clinet hosts a chat room (name, owner identified by ip)
     """
 
-    def __init__(self, client, peers=[]):
+    def __init__(self, client):
         self.client = client
-        self.peers = peers
 
     # Returns [ip, port]
     def __str__(self):
@@ -42,6 +41,10 @@ class ClientObject(object):
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((LISTEN_IP, LISTEN_PORT)) # 0.0.0.0 means assigned ip address
+
+# Inform host for incoming connections
+def host_inform():
+    pass
 
 print("Server started! IP: %s PORT: %d" % (LISTEN_IP, LISTEN_PORT))
 while 1:
@@ -90,11 +93,16 @@ while 1:
             if room:
 
                 # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
-                sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
-                room.peers.append((ip,port)) # this uncover the ip addresses of the room's participant no good...
-                return_message = "302,%d:%d" % (room[0], room[1])
+                # sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
+                inform_host_message = json.dumps({"ip_address": ip, "port": port})
+
+                if not DEBUG:
+                    sock.sendto(inform_host_message, ( room[0], room[1] ))
+
+                # room.peers.append((ip,port))
+                return_message = {"status_code": 302, "ip_address": room[0], "port": room[1]}
             else:
-                return_message = "404,%s is not found." % value
+                return_message = {"status_code": 404}
 
         # TODO: implement return room size if specified because sending all at once is not very productive
         elif action == "show_rooms" and value == "all":

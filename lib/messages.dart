@@ -23,7 +23,9 @@ class MessagesState extends State<Messages>
       // acts like getRooms()
       ConnectionHandler serverGetRoomConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
       String roomListSession = serverGetRoomConnection.expectResponse((Connection, json_data) => {
-        rooms = json_data,
+
+        // TODO: put error handler here if no message found
+        rooms = json_data["message"],
         Connection.closeSession(),
         Connection.closeConnection(),
 
@@ -58,9 +60,15 @@ class MessagesState extends State<Messages>
               {
                 return ListTile
                 (
+
+                  // When a room name is clicked at the room selection list
                   onTap: ()
                   {
+                    print("TAPPED");
                     print(getRoomData(rooms, index, false));
+
+                    InformServerForConnectingToRoom(rooms.keys.toList()[index]);
+
                     setState(()
                     {
                       Navigator.pushNamed(context, '/room', arguments: RoomData
