@@ -64,19 +64,24 @@ class MessagesState extends State<Messages>
                   // When a room name is clicked at the room selection list
                   onTap: ()
                   {
-                    print("TAPPED");
-                    print(getRoomData(rooms, index, false));
 
-                    InformServerForConnectingToRoom(rooms.keys.toList()[index]);
+                    try {
+                      print("TAPPED");
+                      print(getRoomData(rooms, index, false));
 
-                    setState(()
-                    {
-                      Navigator.pushNamed(context, '/room', arguments: RoomData
-                      (
-                        getRoomData(rooms, index, false),
-                        getRoomData(rooms, index, true)
-                      ));
-                    });
+                      InformServerForConnectingToRoom(rooms.keys.toList()[index]);
+                      print("AFTER");
+
+                      setState(()
+                      {
+                        Navigator.pushNamed(context, '/room', arguments: RoomData
+                          (
+                            getRoomData(rooms, index, false),
+                            getRoomData(rooms, index, true)
+                        ));
+                      });
+                    }
+                    catch (error) {}
                   },
                   isThreeLine: false,
                   title: Text(getRoomData(rooms, index, false)),

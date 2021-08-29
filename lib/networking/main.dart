@@ -43,7 +43,7 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
 {
   int queue_counter;
   var Connection;
-  String session = data_json["session"];
+  var session = data_json["session"];
 
   // TODO: if connection with the corresponding ip and port doesn't exist throw error same for session
   for (queue_counter=0; queue_counter<Connections.length; queue_counter++)
@@ -52,21 +52,27 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
     if (udp_packet.address == InternetAddress(Connection.ip_address) && udp_packet.port == Connection.port)
     {
 
-      if (Connection.Sessions[session] != null)
+      print(session);
+      if (session != null)
       {
-        // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
-        Connection.last_session = session;
-        data_json.remove("session");
+        if (Connection.Sessions[session] != null)
+        {
+          // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
+          Connection.last_session = session;
+          data_json.remove("session");
 
-        // This is the callback
-        Connection.Sessions[session][0](Connection, data_json);
+          print("From Incoming Data Router session part");
+
+          // This is the callback
+          Connection.Sessions[session][0](Connection, data_json);
+        }
       }
 
       else {
         bool connectedToARoom = true; // PRIORITY TODO: change this to anything which could check if user currently connected to any room aka expecting a room message to display it in the chat
         if (data_json["room_message"] != null && connectedToARoom)
         {
-          print("Displayed: ${data_json["room_message"]}");
+          print("Displayed room_message: ${data_json["room_message"]}");
         }
       }
 
@@ -83,6 +89,8 @@ class ConnectionHandler {
   Map Sessions = {};
 
   ConnectionHandler(String ip_address, int port) {
+
+    if (port > 65535) throw "Invalid port number";
     this.ip_address = ip_address;
     this.port = port;
     Connections.add(this);
@@ -107,7 +115,7 @@ class ConnectionHandler {
       });
     });
 
-    print(data);
+    print("From sendData ${data}");
 
     return 0;
   }
@@ -181,7 +189,7 @@ void EstablishedCommunicationWithRoomHostCallback(ConnectionHandler Connection, 
 void InformServerForConnectingToRoom(String RoomIdentifier)
 {
     ConnectionHandler serverConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
-    String sessionForRoomCreation = serverConnection.expectResponse((Connection, json_data) {
+    String sessionForRoomCreation = serverConnection.expectResponse((ConnectionHandler Connection, var json_data) {
 
       Connection.closeSession();
       Connection.closeConnection();
@@ -198,7 +206,9 @@ void InformServerForConnectingToRoom(String RoomIdentifier)
       String roomHostSession = roomHostConnection.expectResponse(EstablishedCommunicationWithRoomHostCallback);
 
       Map request = {"message": "establish"};
-      roomHostConnection.sendData(jsonEncode(request), roomHostSession);
+      String data = jsonEncode(request);
+
+      roomHostConnection.sendData(data, roomHostSession);
 
     });
 
@@ -220,7 +230,8 @@ void listenDatagram()
          // structure: [return code, response message, session if any]
          final recvd_data = String.fromCharCodes(udp_packet.data);
          var data_json = jsonDecode(recvd_data); // this should be Map like
-         print(data_json);
+
+         print("From listenDatagram ${data_json}");
 
          // handle error if invalid data is received like not appropiate type
          try {RouteIncomingData(data_json, udp_packet);}
@@ -232,6 +243,7 @@ void listenDatagram()
            print(error);
          }
 
+         // RouteIncomingData(data_json, udp_packet);
          // if (recvd_data == "ping") socket.send(Utf8Codec().encode("ping ack"), udp_packet.address, SERVER_PORT);
        }
      });

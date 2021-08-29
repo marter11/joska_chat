@@ -12,7 +12,7 @@ LISTEN_PORT = 4567
 
 if DEBUG:
     # add temporary rooms
-    CACHE["test room which you cant connect to"] = ["127.0.0.1", "69420"]
+    CACHE["test room which you cant connect to"] = ["127.0.0.1", 69420]
 
     LISTEN_IP = '127.0.0.1'
 else:
@@ -54,6 +54,7 @@ while 1:
     data = data.decode()
     session = 0 # null means invalid session
 
+
     if data == "keep": continue
 
     try:
@@ -89,7 +90,7 @@ while 1:
                 return_message = CLIENT_QUEUE[session][2]
 
         elif action == "join":
-            room = CAHCE.get(value, None)
+            room = CACHE.get(value, None)
             if room:
 
                 # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
@@ -103,6 +104,8 @@ while 1:
                 return_message = {"status_code": 302, "ip_address": room[0], "port": room[1]}
             else:
                 return_message = {"status_code": 404}
+
+            return_message["session"] = session
 
         # TODO: implement return room size if specified because sending all at once is not very productive
         elif action == "show_rooms" and value == "all":
