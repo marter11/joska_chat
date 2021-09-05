@@ -84,7 +84,7 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
           print("From Incoming Data Router session part");
 
           // This is the callback
-          Connection.Sessions[session][0](Connection, data_json);
+          Connection.Sessions[session]["response_callback"](Connection, data_json);
         }
 
         // Session is started from other device, and expecting response
@@ -104,7 +104,7 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
 
               // If response is not coming until timeout then the participant is removed from the room
               String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
-                
+
               });
 
               handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
@@ -151,7 +151,7 @@ class ConnectionHandler {
   // used for timeout handling
   int EvenLoopCyclesSession = 0;
 
-  // structure of <Sessions>: { String <session identifier>: [Function <callback function>, String <retransmission data> }
+  // structure of <Sessions>: { String <session identifier>: [ {Function <on response callback>, Map timeout {<on timeout callback>, int timeout in secs}, String <retransmission data> } ]
   Map Sessions = {};
 
   ConnectionHandler(String ip_address, int port) {
@@ -165,7 +165,7 @@ class ConnectionHandler {
   int __modifySessionData(var data, String session)
   {
     try {
-      this.Sessions[session][0] = data;
+      this.Sessions[session]["data"] = data;
       return 0;
     }
     catch(e) { return 1; }
@@ -178,7 +178,7 @@ class ConnectionHandler {
       data += "," + ( session.toString() );
 
       // Store this data for retransmission
-      this.Sessions[session].add(data);
+      this.Sessions[session]["data"] = data;
     }
 
     RawDatagramSocket.bind(InternetAddress.anyIPv4, OWN_PORT).then((socket) {
@@ -195,11 +195,18 @@ class ConnectionHandler {
     return 0;
   }
 
+  // timeout parameter: number of EventLoopCycles * PACKET_SEND_DELAY
+  int setSessionTimeout(dynamic timeout_callback, int timeout, String session)
+  {
+    this.Sessions[session]["timeout"] = {"timeout_callback": timeout_callback, "timeout_in_sec": timeout};
+    return 0;
+  }
+
   // creates session identifier and set up exception for response
-  String expectResponse(dynamic callback)
+  String expectResponse(dynamic response_callback)
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
-    this.Sessions[session] = [callback];
+    this.Sessions[session]["response_callback"] = response_callback;
     return session;
   }
 
@@ -237,8 +244,21 @@ void EventLoopHandler() async
       else
       {
         // print(Connection.Sessions);
-        Connection.Sessions.values.forEach( (value) => {
-          Connection.sendData(value[1], "0") // resend data until Connection.closeSession() is not called
+        Connection.Sessions.values.forEach( (value) {
+
+          // trigger timeout callback if required
+          if(value["timeout"] != null)
+          {
+            if(value["timeout"]["timeout_in_sec"] <= PACKET_SEND_DELAY*Connection.EvenLoopCyclesSession)
+            {
+              value["timeout"]["timeout_callback"](Connection);
+            }
+          }
+
+          // resend data until Connection.closeSession() is not called
+          else {
+            Connection.sendData(value["data"], "0");
+          }
         });
       }
 
