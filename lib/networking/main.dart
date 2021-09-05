@@ -11,6 +11,7 @@ import 'dart:async';
 const String SERVER_ADDRESS = "10.0.2.2";
 const int SERVER_PORT = 4567;
 const int OWN_PORT = 4890;
+const int PACKET_SEND_DELAY = 2;
 
 // EXAMPLE START
 
@@ -38,6 +39,23 @@ void displayChatRoomUI(ConnectionHandler Connection, var data_json)
 
 const int SessionTimeout = 10;
 List Connections = [];
+List RoomParticipants = []; // might use it instead of a bool value to determine if user is currently part of a room
+
+
+// dynamic ip_address is comparable with string using ip_address == InternetAddress(variable)
+dynamic getParticipantConnectionFromRoom(dynamic ip_address, int port)
+{
+  int participantCount = RoomParticipants.length, participantIndex;
+  ConnectionHandler connection;
+
+  for(participantIndex=0; participantIndex<participantCount; participantIndex++)
+  {
+    connection = RoomParticipants[participantIndex];
+    if(InternetAddress(connection.ip_address) == ip_address && connection.port == port) return connection;
+  }
+
+  return null;
+}
 
 void RouteIncomingData(var data_json, dynamic udp_packet)
 {
@@ -55,6 +73,8 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
       print(session);
       if (session != null)
       {
+
+        // Session is not started from this device
         if (Connection.Sessions[session] != null)
         {
           // PRIORITY TODO: i don't know if race condition happens here or not when multiple UDP packets arrive with valid sessions
@@ -66,16 +86,58 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
           // This is the callback
           Connection.Sessions[session][0](Connection, data_json);
         }
+
+        // Session is started from other device, and expecting response
+        else {
+          if(data_json["action"] == "establish")
+          {
+            ConnectionHandler handshakeClientEstablishConnection;
+            var participant = getParticipantConnectionFromRoom(udp_packet.address, udp_packet.port);
+
+            if(participant != null)
+            {
+              handshakeClientEstablishConnection = participant;
+            }
+            else {
+              handshakeClientEstablishConnection = ConnectionHandler(udp_packet.address, udp_packet.port);
+              RoomParticipants.add(handshakeClientEstablishConnection);
+
+              // If response is not coming until timeout then the participant is removed from the room
+              String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
+                
+              });
+
+              handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
+
+            }
+
+            // Confirm establish connection
+            handshakeClientEstablishConnection.sendData(jsonEncode({"status_code": 200, "action": "establish", "session": data_json["session"]}), "0");
+          }
+
+        }
       }
 
+      // Starting point for every incoming data which is not tied to session
       else {
-        bool connectedToARoom = true; // PRIORITY TODO: change this to anything which could check if user currently connected to any room aka expecting a room message to display it in the chat
+        bool connectedToARoom = true; // PRIORITY TODO: change this to anything which could check if user already/currently connected to any room aka expecting a room message to display it in the chat
         if (data_json["room_message"] != null && connectedToARoom)
         {
           print("Displayed room_message: ${data_json["room_message"]}");
         }
-      }
 
+        if(data_json["action"] != null)
+        {
+          // Get ready for receiving establishing handshake from incoming client
+          if(data_json["action"] == "incoming_join")
+          {
+            ConnectionHandler informClientConnection = ConnectionHandler(data_json["ip_address"], data_json["port"]);
+            informClientConnection.sendData('{"action": "expect_response"}', "0");
+            informClientConnection.closeConnection();
+          }
+
+        }
+      }
     }
   }
 }
@@ -84,6 +146,10 @@ class ConnectionHandler {
   String ip_address = "";
   int port = 0;
   String last_session = "";
+
+  // this counts how many times EventLoop has run since the session is open
+  // used for timeout handling
+  int EvenLoopCyclesSession = 0;
 
   // structure of <Sessions>: { String <session identifier>: [Function <callback function>, String <retransmission data> }
   Map Sessions = {};
@@ -94,6 +160,15 @@ class ConnectionHandler {
     this.ip_address = ip_address;
     this.port = port;
     Connections.add(this);
+  }
+
+  int __modifySessionData(var data, String session)
+  {
+    try {
+      this.Sessions[session][0] = data;
+      return 0;
+    }
+    catch(e) { return 1; }
   }
 
   int sendData(String data, String session)
@@ -120,7 +195,7 @@ class ConnectionHandler {
     return 0;
   }
 
-  // creates session identifier and set up expection for response
+  // creates session identifier and set up exception for response
   String expectResponse(dynamic callback)
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
@@ -166,8 +241,11 @@ void EventLoopHandler() async
           Connection.sendData(value[1], "0") // resend data until Connection.closeSession() is not called
         });
       }
+
+      // count for timeout
+      Connection.EventLoopCyclesSession++;
     }
-    await Future.delayed(Duration(seconds:2));
+    await Future.delayed(Duration(seconds:PACKET_SEND_DELAY));
   }
 }
 
@@ -196,7 +274,7 @@ void InformServerForConnectingToRoom(String RoomIdentifier)
 
       if (json_data["status_code"] == 404)
       {
-        // display (room not found)/(invalid room) error message to user
+        // TODO: display (room not found)/(invalid room) error message to user
         return;
       }
 
@@ -205,7 +283,7 @@ void InformServerForConnectingToRoom(String RoomIdentifier)
       ConnectionHandler roomHostConnection = ConnectionHandler(json_data["ip_address"], json_data["port"]);
       String roomHostSession = roomHostConnection.expectResponse(EstablishedCommunicationWithRoomHostCallback);
 
-      Map request = {"message": "establish"};
+      Map request = {"action": "establish"};
       String data = jsonEncode(request);
 
       roomHostConnection.sendData(data, roomHostSession);
