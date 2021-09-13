@@ -102,10 +102,19 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
               handshakeClientEstablishConnection = ConnectionHandler(udp_packet.address, udp_packet.port);
               RoomParticipants.add(handshakeClientEstablishConnection);
 
-              // If response is not coming until timeout then the participant is removed from the room
               String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
-
+                if(json_data["status_code"] == 200)
+                {
+                  Connection.closeSession();
+                }
               });
+
+              // If response is not coming until timeout then the participant is removed from the room
+              handShakeClientEstablishConnection.setTimeout((ConnectionHandler Connection, String session) {
+                RoomParticipants.remove(Connection);
+                Connection.closeSession();
+                Connection.closeConnection();
+              }, 15, handShakeClientEstablishSession);
 
               handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
 
@@ -149,7 +158,7 @@ class ConnectionHandler {
 
   // this counts how many times EventLoop has run since the session is open
   // used for timeout handling
-  int EvenLoopCyclesSession = 0;
+  int EventLoopCyclesSession = 0;
 
   // structure of <Sessions>: { String <session identifier>: [ {Function <on response callback>, Map timeout {<on timeout callback>, int timeout in secs}, String <retransmission data> } ]
   Map Sessions = {};
@@ -195,6 +204,7 @@ class ConnectionHandler {
     return 0;
   }
 
+  // only callable if expectResponse is called beforehand, only timeouts session
   // timeout parameter: number of EventLoopCycles * PACKET_SEND_DELAY
   int setSessionTimeout(dynamic timeout_callback, int timeout, String session)
   {
@@ -203,9 +213,10 @@ class ConnectionHandler {
   }
 
   // creates session identifier and set up exception for response
-  String expectResponse(dynamic response_callback)
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
+    String expectResponse(dynamic response_callback)
+    this.Sessions[session] = {};
     this.Sessions[session]["response_callback"] = response_callback;
     return session;
   }
@@ -244,14 +255,16 @@ void EventLoopHandler() async
       else
       {
         // print(Connection.Sessions);
-        Connection.Sessions.values.forEach( (value) {
+        Connection.Sessions.keys.forEach( (key) {
 
           // trigger timeout callback if required
-          if(value["timeout"] != null)
+          if(Connection.Sessions[key]["timeout"] != null)
           {
-            if(value["timeout"]["timeout_in_sec"] <= PACKET_SEND_DELAY*Connection.EvenLoopCyclesSession)
+            if(Connection.Sessions[key]["timeout"]["timeout_in_sec"] <= PACKET_SEND_DELAY*Connection.EvenLoopCyclesSession)
             {
-              value["timeout"]["timeout_callback"](Connection);
+
+              // key here is the String session
+              Connection.Sessions[key]["timeout"]["timeout_callback"](Connection, key);
             }
           }
 

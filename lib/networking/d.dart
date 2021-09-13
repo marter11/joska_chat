@@ -22,9 +22,6 @@ class A
 
 void main()
 {
-  A a = A(3);
-  a.prin();
-
-  A b = A(4);
-  a.prin();
+  Map k = {};
+  k["d"]["a"] = 5; 
 }
