@@ -12,7 +12,7 @@ LISTEN_PORT = 4567
 
 if DEBUG:
     # add temporary rooms
-    CACHE["test room which you cant connect to"] = ["127.0.0.1", 69420]
+    CACHE["test room which you cant connect to"] = ["127.0.0.1", 1920]
 
     LISTEN_IP = '127.0.0.1'
 else:

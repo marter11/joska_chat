@@ -260,7 +260,7 @@ void EventLoopHandler() async
           // trigger timeout callback if required
           if(Connection.Sessions[key]["timeout"] != null)
           {
-            if(Connection.Sessions[key]["timeout"]["timeout_in_sec"] <= PACKET_SEND_DELAY*Connection.EvenLoopCyclesSession)
+            if(Connection.Sessions[key]["timeout"]["timeout_in_sec"] <= PACKET_SEND_DELAY*Connection.EventLoopCyclesSession)
             {
 
               // key here is the String session
@@ -313,7 +313,7 @@ void InformServerForConnectingToRoom(String RoomIdentifier)
         return;
       }
 
-      // NOTE: we could use the the ip and port which are already saved to memory, but instead use the newly received parameters
+      // NOTE: we could/should use the the ip and port which are already saved to memory, but instead we use the newly received parameters
       // reason: we will optimize to send as few data as possible when we get the ROOM LIST from server
       ConnectionHandler roomHostConnection = ConnectionHandler(json_data["ip_address"], json_data["port"]);
       String roomHostSession = roomHostConnection.expectResponse(EstablishedCommunicationWithRoomHostCallback);
@@ -321,8 +321,13 @@ void InformServerForConnectingToRoom(String RoomIdentifier)
       Map request = {"action": "establish"};
       String data = jsonEncode(request);
 
-      roomHostConnection.sendData(data, roomHostSession);
+      roomHostConnection.setSessionTimeout((ConnectionHandler Connection, String session) {
+        print("TIMED OUT connecting to room");
+        Connection.closeSession();
+        Connection.closeConnection();
+      }, 15, roomHostSession);
 
+      roomHostConnection.sendData(data, roomHostSession);
     });
 
     String dataToSend = "join:"+RoomIdentifier;
