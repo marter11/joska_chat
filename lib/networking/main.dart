@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:isolate';
 import 'dart:async';
+import '../messages.dart';
 
 // Description of variables and functions
 //
@@ -289,17 +290,8 @@ void InformServerCallback(ConnectionHandler Connection, var json_data)
 
 }
 
-void EstablishedCommunicationWithRoomHostCallback(ConnectionHandler Connection, var json_data)
-{
-  if (json_data["status_code"] == 200)
-  {
-    Connection.closeSession();
-
-  }
-}
-
 // RoomIdentifier currently refers to the room's name
-void InformServerForConnectingToRoom(String RoomIdentifier)
+void InformServerForConnectingToRoom(String RoomIdentifier, dynamic EstablishedCommunicationWithRoomHostCallback)
 {
     ConnectionHandler serverConnection = ConnectionHandler(SERVER_ADDRESS, SERVER_PORT);
     String sessionForRoomCreation = serverConnection.expectResponse((ConnectionHandler Connection, var json_data) {

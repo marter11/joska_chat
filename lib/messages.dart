@@ -69,17 +69,26 @@ class MessagesState extends State<Messages>
                       print("TAPPED");
                       print(getRoomData(rooms, index, false));
 
-                      InformServerForConnectingToRoom(rooms.keys.toList()[index]);
+                      // Has to define this here to be able to call setState() from the function's body
+                      void EstablishedCommunicationWithRoomHostCallback(ConnectionHandler Connection, var json_data)
+                      {
+                        if (json_data["status_code"] == 200)
+                        {
+                          Connection.closeSession();
+                          setState(()
+                          {
+                            Navigator.pushNamed(context, '/room', arguments: RoomData
+                            (
+                              getRoomData(rooms, index, false),
+                              getRoomData(rooms, index, true)
+                            ));
+                          });
+                        }
+                      }
+
+                      InformServerForConnectingToRoom(rooms.keys.toList()[index], EstablishedCommunicationWithRoomHostCallback);
                       print("AFTER");
 
-                      setState(()
-                      {
-                        Navigator.pushNamed(context, '/room', arguments: RoomData
-                          (
-                            getRoomData(rooms, index, false),
-                            getRoomData(rooms, index, true)
-                        ));
-                      });
                     }
                     catch (error) {}
                   },
