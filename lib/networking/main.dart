@@ -110,7 +110,7 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
               });
 
               // If response is not coming until timeout then the participant is removed from the room
-              handShakeClientEstablishConnection.setTimeout((ConnectionHandler Connection, String session) {
+              handshakeClientEstablishConnection.setSessionTimeout((ConnectionHandler Connection, String session) {
                 RoomParticipants.remove(Connection);
                 Connection.closeSession();
                 Connection.closeConnection();
@@ -213,9 +213,9 @@ class ConnectionHandler {
   }
 
   // creates session identifier and set up exception for response
+  String expectResponse(dynamic response_callback)
   {
     String session = (DateTime.now().millisecondsSinceEpoch).toString();
-    String expectResponse(dynamic response_callback)
     this.Sessions[session] = {};
     this.Sessions[session]["response_callback"] = response_callback;
     return session;
@@ -270,7 +270,9 @@ void EventLoopHandler() async
 
           // resend data until Connection.closeSession() is not called
           else {
-            Connection.sendData(value["data"], "0");
+
+            // HERE YOU MODIFIED &&& REMOVE THIS COMMENT
+            Connection.sendData(Connection.Sessions[key]["data"], "0");
           }
         });
       }

@@ -95,7 +95,7 @@ while 1:
 
                 # TODO: this needs more error handling; might use setter and getter to handle when new peer appended
                 # sock.sendto( ("%d:%d" % (ip, port)).encode(), (room[0], room[1]) )
-                inform_host_message = json.dumps({"action": "incoming_join": , "ip_address": ip, "port": port})
+                inform_host_message = json.dumps({"action": "incoming_join", "ip_address": ip, "port": port})
 
                 if not DEBUG:
                     sock.sendto(inform_host_message, ( room[0], room[1] ))
