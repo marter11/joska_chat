@@ -130,7 +130,10 @@ class NewRoomState extends State<NewRoom>
                   // calls backend function for creating room
                   createRoom(name, number);
                   // closes room creation page
-                  Navigator.pop(context);
+                  // Navigator.pop(context);
+
+                  print("fassssz");
+
                 }
               },
               // just for testing, couldn't get it working

@@ -75,6 +75,8 @@ class MessagesState extends State<Messages>
                         if (json_data["status_code"] == 200)
                         {
                           Connection.closeSession();
+                          // Connection.sendData(json_data["respondable_session"], "0")
+
                           setState(()
                           {
                             Navigator.pushNamed(context, '/room', arguments: RoomData

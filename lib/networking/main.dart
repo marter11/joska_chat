@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:isolate';
 import 'dart:async';
-import '../messages.dart';
+// import '../messages.dart';
 
 // Description of variables and functions
 //
@@ -38,10 +38,53 @@ void displayChatRoomUI(ConnectionHandler Connection, var data_json)
 
 // EXAMPLE END
 
+
+
 const int SessionTimeout = 10;
 List Connections = [];
 List RoomParticipants = []; // might use it instead of a bool value to determine if user is currently part of a room
 
+
+dynamic advertiseIncomingPeerToRoomParticipants()
+{
+  int participantIndex;
+  ConnectionHandler connection;
+  Map advertisementMessage = {"ac tion": "participant_advertisement", "participant_list": []};
+
+  // construct advertisement message
+  for(participantIndex=0; participantIndex<RoomParticipants.length; participantIndex++)
+  {
+    connection = RoomParticipants[participantIndex];
+    advertisementMessage["participant_list"].add([InternetAddress(connection.ip_address), connection.port]);
+
+    // String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
+    //   if(json_data["status_code"] == 200)
+    //   {
+    //     Connection.closeSession();
+    //   }
+    // });
+    //
+    // // If response is not coming until timeout then the participant is removed from the room
+    // handshakeClientEstablishConnection.setSessionTimeout((ConnectionHandler Connection, String session) {
+    //   RoomParticipants.remove(Connection);
+    //   Connection.closeSession();
+    //   Connection.closeConnection();
+    // }, 15, handShakeClientEstablishSession);
+    //
+    // handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
+
+
+  }
+
+  for(participantIndex=0; participantIndex<RoomParticipants.length; participantIndex++)
+  {
+
+    // TODO: send out if no incoming response send new one
+    connection = RoomParticipants[participantIndex];
+    // connection.sendData(jsonEncode(advertisementMessage), );
+  }
+
+}
 
 // dynamic ip_address is comparable with string using ip_address == InternetAddress(variable)
 dynamic getParticipantConnectionFromRoom(dynamic ip_address, int port)
@@ -103,27 +146,36 @@ void RouteIncomingData(var data_json, dynamic udp_packet)
               handshakeClientEstablishConnection = ConnectionHandler(udp_packet.address, udp_packet.port);
               RoomParticipants.add(handshakeClientEstablishConnection);
 
-              String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
-                if(json_data["status_code"] == 200)
-                {
-                  Connection.closeSession();
-                }
-              });
-
-              // If response is not coming until timeout then the participant is removed from the room
-              handshakeClientEstablishConnection.setSessionTimeout((ConnectionHandler Connection, String session) {
-                RoomParticipants.remove(Connection);
-                Connection.closeSession();
-                Connection.closeConnection();
-              }, 15, handShakeClientEstablishSession);
-
-              handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
+              // String handShakeClientEstablishSession = handshakeClientEstablishConnection.expectResponse((ConnectionHandler Connection, var json_data) {
+              //   if(json_data["status_code"] == 200)
+              //   {
+              //     Connection.closeSession();
+              //   }
+              // });
+              //
+              // // If response is not coming until timeout then the participant is removed from the room
+              // handshakeClientEstablishConnection.setSessionTimeout((ConnectionHandler Connection, String session) {
+              //   RoomParticipants.remove(Connection);
+              //   Connection.closeSession();
+              //   Connection.closeConnection();
+              // }, 15, handShakeClientEstablishSession);
+              //
+              // handshakeClientEstablishConnection.sendData("keep", handShakeClientEstablishSession);
 
             }
 
             // Confirm establish connection
+            // handshakeClientEstablishConnection.sendData(jsonEncode({"status_code": 200, "action": "establish", "responsable_session": handshakeClientEstablishConnection.last_session, "session": data_json["session"]}), "0");
             handshakeClientEstablishConnection.sendData(jsonEncode({"status_code": 200, "action": "establish", "session": data_json["session"]}), "0");
+
           }
+
+        //  else if(data_json["action"] == "respond")
+        //  {
+        //    ConnectionHandler respondToAction = ConnectionHandler(udp_packet.address, udp_packet.port);
+        //    respondToAction.sendData('{"status_code": 200}', "0");
+        //    respondToAction.closeConnection();
+        //  }
 
         }
       }
